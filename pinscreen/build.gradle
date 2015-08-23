@@ -1,0 +1,63 @@
+final VERSION_MAJOR = 1 // max two digits
+final VERSION_MINOR = 3 // max two digits
+final VERSION_PATCH = 1 // max two digits
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.0"
+
+    defaultConfig {
+        minSdkVersion 10
+        targetSdkVersion 23
+        versionCode VERSION_MAJOR * 10000 + VERSION_MINOR * 100 + VERSION_PATCH
+        versionName "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+/**
+ * Copies aar file to library folder
+ */
+task copyLibraryFile(type: Copy) {
+    from "${buildDir}/outputs/aar/${project.name}-release.aar"
+    into "${rootDir}/library-apk/"
+    rename ("${project.name}-release.aar", "${project.name}-${android.defaultConfig.versionName}.aar")
+}
+
+/**
+ * builds library .aar file and copies it to library folder
+ */
+task buildLibrary(dependsOn: ['assemble', 'copyLibraryFile']) {
+}
+
+apply plugin: 'maven'
+task generatePom << {
+    pom {
+        project {
+            version android.defaultConfig.versionName
+            groupId "sk.teamsoft.utils"
+            packaging "aar"
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+        }
+    }.writeTo("$buildDir/${project.name}-${android.defaultConfig.versionName}.pom")
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.0.0'
+    compile 'com.android.support:recyclerview-v7:23.0.0'
+}
