@@ -14,10 +14,10 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.TextView;
 
 import java.util.Arrays;
@@ -29,17 +29,16 @@ import java.util.Arrays;
  *
  * @author Dusan Bartos
  */
-@SuppressWarnings("unused")
+//@SuppressWarnings("unused")
 public class PINScreen extends DialogFragment implements RecyclerItemClickListener.OnItemClickListener {
 
     protected static final String FRAGMENT_TAG = "sk_teamsoft_pinscreen_lock_fragment";
 
     private static final String BUNDLE_REAL_VALUE = "realVal";
     private static final String BUNDLE_CURRENT_VALUE = "val";
-    private static final String BUNDLE_CURRENT_HINT = "hint";
     private static final String BUNDLE_CANCELABLE = "cancelable";
-    private static final String BUNDLE_FULLSCREEN = "fullscreen";
     private static final String BUNDLE_SETUP = "setup";
+    private static final String BUNDLE_MAXLENGTH = "maxLength";
 
     // empty initial listener
     private static IPINDialogListener mListener;
@@ -57,10 +56,7 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
     private int mMaxLength = 4;
 
     private boolean mCancelable = false;
-    private boolean mFullscreen = true;
     private boolean mSetup = false;
-    //TODO resource string
-    private CharSequence mHint = "Enter PIN";
     private CharSequence mRealValue;
     private StringBuilder mValue = new StringBuilder("");
     private TextView mValueTextView;
@@ -103,42 +99,12 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
     }
 
     /**
-     * Sets hint to be displayed on the lock screen
-     * Can vary for different cases (Enter PIN, Repeat PIN...)
-     *
-     * @param hint hint
-     */
-    public void setHint(String hint) {
-        mHint = hint;
-    }
-
-    /**
-     * Sets hint to be displayed on the lock screen
-     * Can vary for different cases (Enter PIN, Repeat PIN...)
-     *
-     * @param hint hint string
-     */
-    public void setHint(CharSequence hint) {
-        mHint = hint;
-    }
-
-    /**
      * Sets real PIN value to compare with
      *
      * @param realPIN real PIN value
      */
     public void setRealValue(CharSequence realPIN) {
         mRealValue = realPIN;
-    }
-
-    /**
-     * Sets fragment to be fullscreen, or dialog style
-     * Dialog is fullscreen by default
-     *
-     * @param isFullscreen true to show as fullscreen
-     */
-    public void setFullscreen(boolean isFullscreen) {
-        mFullscreen = isFullscreen;
     }
 
     /**
@@ -154,24 +120,19 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
     /**
      * Updates lock screen settings all at once
      *
-     * @param realPIN    PIN to compare user entry to
-     * @param hint       hint
-     * @param cancelable is lock dialog cancellable
-     * @param fullScreen is lock dialog fullscreen
+     * @param realPIN      PIN to compare user entry to
+     * @param isCancelable is lock dialog cancellable
+     * @param isSetup      is dialog for setting up the first PIN
      */
-    public void updateSettings(String realPIN, String hint,
-                               Boolean cancelable, Boolean fullScreen, boolean setup) {
+    public void updateSettings(String realPIN, Boolean isCancelable, boolean isSetup) {
         setRealValue(realPIN);
-        if (hint != null) {
-            setHint(hint);
+        if (isCancelable != null) {
+            setCancelableDialog(isCancelable);
         }
-        if (cancelable != null) {
-            setCancelableDialog(cancelable);
+        setSetup(isSetup);
+        if (!isSetup) {
+            mMaxLength = realPIN.length();
         }
-        if (fullScreen != null) {
-            setFullscreen(fullScreen);
-        }
-        setSetup(setup);
     }
 
     /**
@@ -184,18 +145,15 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState != null) {
+            mMaxLength = savedInstanceState.getInt(BUNDLE_MAXLENGTH);
             mRealValue = savedInstanceState.getString(BUNDLE_REAL_VALUE);
-            mFullscreen = savedInstanceState.getBoolean(BUNDLE_FULLSCREEN);
             mCancelable = savedInstanceState.getBoolean(BUNDLE_CANCELABLE);
             mSetup = savedInstanceState.getBoolean(BUNDLE_SETUP);
-            mHint = savedInstanceState.getString(BUNDLE_CURRENT_HINT);
             mValue = new StringBuilder();
             mValue.append(savedInstanceState.getString(BUNDLE_CURRENT_VALUE));
         }
 
-        if (mFullscreen) {
-            setStyle(DialogFragment.STYLE_NORMAL, android.R.style.Theme_Light_NoTitleBar_Fullscreen);
-        }
+        setStyle(DialogFragment.STYLE_NORMAL, android.R.style.Theme_Light_NoTitleBar_Fullscreen);
     }
 
     @NonNull
@@ -203,11 +161,6 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         this.setCancelable(mCancelable);
-
-        if (!mFullscreen) {
-            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        }
-
         return dialog;
     }
 
@@ -223,7 +176,11 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
         }
 
         // set value and hint
-        mValueTextView.setHint(mHint);
+        if (mSetup) {
+            mValueTextView.setHint(R.string.pinscreen_setup_pin_hint);
+        } else {
+            mValueTextView.setHint(R.string.pinscreen_pin_hint_default);
+        }
         refreshValueText();
 
         // initialize numbers grid
@@ -246,10 +203,9 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
     public void onSaveInstanceState(Bundle outState) {
         outState.putString(BUNDLE_REAL_VALUE, mRealValue != null ? mRealValue.toString() : "");
         outState.putString(BUNDLE_CURRENT_VALUE, mValue.toString());
-        outState.putString(BUNDLE_CURRENT_HINT, mHint.toString());
-        outState.putBoolean(BUNDLE_FULLSCREEN, mFullscreen);
         outState.putBoolean(BUNDLE_CANCELABLE, mCancelable);
         outState.putBoolean(BUNDLE_SETUP, mSetup);
+        outState.putInt(BUNDLE_MAXLENGTH, mMaxLength);
 
         super.onSaveInstanceState(outState);
     }
@@ -392,9 +348,9 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
 
             // submit and back have smaller font-size
             if (code.equals(LockGridValues.SUBMIT_TYPE) || code.equals(LockGridValues.BACK_TYPE)) {
-                lockGridViewHolder.setTextSize(26);
+                lockGridViewHolder.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
             } else {
-                lockGridViewHolder.setTextSize(40);
+                lockGridViewHolder.setTextSize(TypedValue.COMPLEX_UNIT_SP, 40);
             }
         }
 
@@ -472,8 +428,8 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
             mItemValue.setText(value);
         }
 
-        public void setTextSize(int size) {
-            mItemValue.setTextSize(size);
+        public void setTextSize(int unit, float size) {
+            mItemValue.setTextSize(unit, size);
         }
     }
 

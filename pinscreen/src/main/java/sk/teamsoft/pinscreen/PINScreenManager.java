@@ -1,6 +1,5 @@
 package sk.teamsoft.pinscreen;
 
-import android.content.Context;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -14,50 +13,63 @@ import android.support.v4.app.FragmentManager;
 @SuppressWarnings("unused")
 public class PINScreenManager {
 
+    private static PINScreenManager sInstance;
+
+    public static PINScreenManager getInstance() {
+        if (sInstance == null) {
+            synchronized (PINScreenManager.class) {
+                if (sInstance == null) {
+                    sInstance = new PINScreenManager();
+                }
+            }
+        }
+        return sInstance;
+    }
+
     /**
-     * Locks application
+     * Application Locker + handler
      */
-    private static final Runnable lockTask = new Runnable() {
+    private final Runnable lockTask = new Runnable() {
         @Override
         public void run() {
             mLocked = true;
         }
     };
-    private static final Handler lockHandler = new Handler();
+    private final Handler lockHandler = new Handler();
 
     /**
      * Is application locked
      */
-    private static boolean mLocked = false;
+    private boolean mLocked = false;
     /**
      * Delay for app locking
      * Defined in seconds
      * 0 by default
      */
-    private static int mLockDelay = 0;
+    private int mLockDelay = 0;
     /**
      * PIN for unlocking the app
      */
-    private static String mPIN = "";
+    private String mPIN = "";
 
     /**
      * @return true if app is locked
      */
-    public static boolean isAppLocked() {
+    public boolean isAppLocked() {
         return mLocked;
     }
 
     /**
      * Locks app
      */
-    public static void lock() {
+    public void lock() {
         mLocked = true;
     }
 
     /**
      * Unlocks app
      */
-    public static void unLock() {
+    public void unLock() {
         mLocked = false;
     }
 
@@ -65,7 +77,7 @@ public class PINScreenManager {
      * Locks app with defined delay
      * Delay is 0 seconds by default
      */
-    public static void lockWithDelay() {
+    public void lockWithDelay() {
         lockHandler.removeCallbacks(lockTask);
         lockHandler.postDelayed(lockTask, mLockDelay * 1000);
     }
@@ -75,7 +87,7 @@ public class PINScreenManager {
      *
      * @param newPIN pin
      */
-    public static void setPIN(String newPIN) {
+    public void setPIN(String newPIN) {
         mPIN = newPIN;
     }
 
@@ -84,7 +96,7 @@ public class PINScreenManager {
      *
      * @return pin
      */
-    public static String getPIN() {
+    public String getPIN() {
         return mPIN;
     }
 
@@ -93,54 +105,48 @@ public class PINScreenManager {
      *
      * @param delay delay in seconds
      */
-    public static void setPINDelay(int delay) {
+    public void setPINDelay(int delay) {
         mLockDelay = delay;
+    }
+
+    /**
+     * Prompt PIN dialog to unlock app
+     *
+     * @param fm         fragment manager
+     * @param cancelable true if dialog can be cancelled
+     */
+    private void askForPINInternal(FragmentManager fm,
+                                   Boolean cancelable,
+                                   boolean setup) {
+        Fragment fragment = fm.findFragmentByTag(PINScreen.FRAGMENT_TAG);
+        PINScreen lockScreen;
+
+        if (fragment instanceof PINScreen) {
+            lockScreen = ((PINScreen) fragment);
+        } else {
+            lockScreen = PINScreen.show(fm);
+        }
+
+        lockScreen.updateSettings(mPIN, cancelable, setup);
     }
 
     /**
      * Opens PIN screen to ask for PIN
      * PIN has to be set before, or it will be the default one ("")
      *
-     * @param context         context
      * @param fragmentManager fragment manager to use when showing Lock screen
-     * @param hintId          string resource id to show as a hint
      * @param cancelable      true to make PIN dialog cancellable
-     * @param fullScreen      true to make PIN dialog fullscreen
      */
-    public static void askForPIN(final Context context, FragmentManager fragmentManager,
-                                 Integer hintId, Boolean cancelable, Boolean fullScreen) {
-        askForPINInternal(context, fragmentManager, hintId, cancelable, fullScreen, false);
+    public void askForPIN(FragmentManager fragmentManager, Boolean cancelable) {
+        askForPINInternal(fragmentManager, cancelable, false);
     }
 
     /**
      * Sets new PIN
      *
-     * @see #askForPIN(android.content.Context, android.support.v4.app.FragmentManager, Integer, Boolean, Boolean)
+     * @see #askForPIN(android.support.v4.app.FragmentManager, Boolean)
      */
-    public static void setupPIN(Context context, FragmentManager fragmentManager, Boolean fullScreen) {
-        askForPINInternal(context, fragmentManager, R.string.setup_pin_hint, true, fullScreen, true);
-    }
-
-    /**
-     * Prompt PIN dialog to unlock app
-     *
-     * @param context    context
-     * @param fm         fragment manager
-     * @param hintId     text to display when PIN field is empty
-     * @param cancelable true if dialog can be cancelled
-     */
-    private static void askForPINInternal(final Context context,
-                                          FragmentManager fm,
-                                          Integer hintId, Boolean cancelable, Boolean fullScreen,
-                                          boolean setup) {
-        Fragment fragment = fm.findFragmentByTag(PINScreen.FRAGMENT_TAG);
-        String hint = hintId != null ? context.getString(hintId) : null;
-
-        if (fragment == null) {
-            PINScreen lockScreen = PINScreen.show(fm);
-            lockScreen.updateSettings(mPIN, hint, cancelable, fullScreen, setup);
-        } else if (fragment instanceof PINScreen) {
-            ((PINScreen) fragment).updateSettings(mPIN, hint, cancelable, fullScreen, setup);
-        }
+    public void setupPIN(FragmentManager fragmentManager, Integer maxLength) {
+        askForPINInternal(fragmentManager, true, true);
     }
 }
