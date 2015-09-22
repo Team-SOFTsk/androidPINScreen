@@ -25,11 +25,10 @@ import java.util.Arrays;
 /**
  * PINScreen component
  * Overrides dialog fragment
- * uses {@link android.support.v7.widget.RecyclerView} widget
  *
  * @author Dusan Bartos
  */
-//@SuppressWarnings("unused")
+@SuppressWarnings("unused")
 public class PINScreen extends DialogFragment implements RecyclerItemClickListener.OnItemClickListener {
 
     protected static final String FRAGMENT_TAG = "sk_teamsoft_pinscreen_lock_fragment";
@@ -289,33 +288,8 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
     }
 
     /**
-     * Interface to be used as a callback object
-     */
-    public interface IPINDialogListener {
-        /**
-         * Fired when entered PIN is correct
-         */
-        void onPINEntered();
-
-        /**
-         * Used for setting up a new PIN
-         *
-         * @param pin entered PIN
-         */
-        void onPINSetup(String pin);
-
-        /**
-         * Fired when entered PIN is not correct
-         */
-        void onWrongEntry();
-    }
-
-    /**
      * Lock Grid adapter
      * Adapter for displaying grid of numbers (plus functional buttons) to enter PIN
-     * Based on {@link android.support.v7.widget.RecyclerView}
-     *
-     * @see android.support.v7.widget.RecyclerView.Adapter
      */
     private class LockGridAdapter extends RecyclerView.Adapter<LockGridViewHolder> {
 
@@ -400,9 +374,6 @@ public class PINScreen extends DialogFragment implements RecyclerItemClickListen
 
     /**
      * Lock Grid viewHolder
-     * Based on {@link android.support.v7.widget.RecyclerView}
-     *
-     * @see android.support.v7.widget.RecyclerView.ViewHolder
      */
     private class LockGridViewHolder extends RecyclerView.ViewHolder {
 

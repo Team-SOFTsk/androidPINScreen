@@ -22,4 +22,10 @@
         android:onClick="showUnclosableDialog"
         android:text="Show nonclosable PIN dialog" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="setupPin"
+        android:text="Setup PIN" />
+
 </LinearLayout>

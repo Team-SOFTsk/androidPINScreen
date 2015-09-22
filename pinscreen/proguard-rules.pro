@@ -18,6 +18,9 @@
 -keep class sk.teamsoft.pinscreen.PINScreen {
     public *;
 }
+-keep class sk.teamsoft.pinscreen.IPINDialogListener {
+    *;
+}
 -keep class sk.teamsoft.pinscreen.PINScreenManager {
     public *;
 }
